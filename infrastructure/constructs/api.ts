@@ -12,7 +12,20 @@ export class ApiConstruct extends Construct {
 
     const { apiHandler } = props;
 
-    this.api = new aws_apigateway.RestApi(this, 'rest');
+    this.api = new aws_apigateway.RestApi(this, 'rest', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: aws_apigateway.Cors.ALL_ORIGINS,
+        allowMethods: aws_apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With',
+        ],
+      },
+    });
 
     this.api.root.addProxy({
       anyMethod: true,

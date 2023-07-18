@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy-s3": "aws s3 sync dist s3://hahuaz-cdk-examples-storagesitebucket0e9c51b8-1ud4nstlgb5f0 --delete --profile hahuaz-root "
+    "deploy-s3": "aws s3 sync dist s3://appointment-resolver-storagesitebucket0e9c51b8-1sfxni1q0n294 --delete --profile hahuaz-root "
   },
   "dependencies": {
     "@types/node": "20.4.2",
@@ -21,6 +21,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "tailwindcss": "3.3.3",
-    "typescript": "5.1.6"
+    "typescript": "5.1.6",
+    "use-immer": "^0.9.0"
   }
 }

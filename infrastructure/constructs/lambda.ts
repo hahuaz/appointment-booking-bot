@@ -15,8 +15,8 @@ export class LambdaConstruct extends Construct {
 
     // const { } = props;
 
-    const { OPENAI_KEY, JWT_TOKEN } = process.env;
-    if (!OPENAI_KEY || !JWT_TOKEN) {
+    const { OPENAI_KEY, OPENAI_ORGANIZATION, JWT_TOKEN } = process.env;
+    if (!OPENAI_KEY || !JWT_TOKEN || !OPENAI_ORGANIZATION) {
       throw new Error('Missing environment variables');
     }
 
@@ -44,6 +44,7 @@ export class LambdaConstruct extends Construct {
       environment: {
         OPENAI_KEY,
         JWT_TOKEN,
+        OPENAI_ORGANIZATION,
       },
     });
 

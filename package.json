@@ -8,7 +8,7 @@
     "test": "jest",
     "cdk-deploy": "npx cdk deploy --profile hahuaz-root",
     "cdk-list": "npx cdk ls",
-    "cdk-watch": "npx cdk watch hahuaz-cdk-examples --hotswap-fallback --logs --profile hahuaz-root"
+    "cdk-watch": "npx cdk watch appointment-resolver --hotswap-fallback --logs --profile hahuaz-root"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.109",
@@ -33,6 +33,7 @@
     "constructs": "^10.0.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "openai": "^3.3.0",
     "source-map-support": "^0.5.21"
   }
 }
