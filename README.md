@@ -1,15 +1,11 @@
+Step 1: Set up a web server with an API endpoint that receives the user's natural language message as input.
 
-# Welcome to your CDK TypeScript project
+Step 2: Use GPT-4 or a similar language model to process the user's message and extract the intent, relative time, and absolute date. Since GPT-3.5 is the last version available in my knowledge, I can provide a solution using GPT-3.5. You may need to adapt it for GPT-4.
 
-This is a blank project for CDK development with TypeScript.
+Step 3: Implement logic to handle different phrases and keywords in Turkish, such as "bugün" (today), "yarın" (tomorrow), "bu Cuma" (this Friday), "30 Temmuz" (30th of July), and extract the corresponding date and time information from the message.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Step 4: Construct the JSON response with the extracted intent and datetime information.
 
-## Useful commands
+Step 5: Implement additional logic to classify intents other than new appointments as "other."
 
-- `npm run build` compile typescript to js
-- `npm run watch` watch for changes and compile
-- `npm run test` perform the jest unit tests
-- `cdk deploy` deploy this stack to your default AWS account/region
-- `cdk diff` compare deployed stack with current state
-- `cdk synth` emits the synthesized CloudFormation template
+Step 6: Write a suite of tests to verify the correctness of the API endpoint. The tests should include different example inputs with expected intents and datetime values. The tests should also verify that intents other than new appointments are correctly classified as "other."
