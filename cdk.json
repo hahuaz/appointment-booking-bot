@@ -34,9 +34,9 @@
     "@aws-cdk/aws-iam:importedRoleStackSafeDefaultPolicyName": true,
     "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true,
     "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
-    "BRANCH": "PROD",
-    "PROD": {
-      "APP_NAME": "hahuaz-cdk-examples"
+    "BRANCH": "dev",
+    "dev": {
+      "APP_NAME": "appointment-resolver"
     }
   }
 }
