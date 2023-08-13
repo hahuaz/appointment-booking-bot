@@ -1,23 +1,24 @@
-import serverlessExpress from '@vendia/serverless-express';
-import express from 'express';
+import type { ChatCompletionRequestMessage } from "openai";
 
-import { Configuration, OpenAIApi } from 'openai';
+import serverlessExpress from "@vendia/serverless-express";
+import express from "express";
+
+import { Configuration, OpenAIApi } from "openai";
 
 import {
   APIGatewayProxyEventV2,
   // APIGatewayProxyResultV2,
   Context,
-} from 'aws-lambda';
+} from "aws-lambda";
 
-const { OPENAI_KEY, JWT_TOKEN, OPENAI_ORGANIZATION } = process.env;
-if (!OPENAI_KEY || !JWT_TOKEN || !OPENAI_ORGANIZATION) {
-  throw new Error('Missing environment variables');
+const { OPENAI_KEY, HOME_IP } = process.env;
+if (!OPENAI_KEY || !HOME_IP) {
+  throw new Error("Missing environment variables");
 }
-const OPENAI_MODEL = 'gpt-3.5-turbo';
+const OPENAI_MODEL = "gpt-3.5-turbo";
 
 const configuration = new Configuration({
   apiKey: OPENAI_KEY,
-  organization: OPENAI_ORGANIZATION,
 });
 const openai = new OpenAIApi(configuration);
 
@@ -29,17 +30,22 @@ app.use(async (req, res, next) => {
 });
 
 app.use(async (req, res, next) => {
-  // if jwt bearer token is invalid drop the request
-  const jwt = req?.headers?.authorization?.split(' ')[1];
-  if (!(jwt === JWT_TOKEN)) {
-    console.log('unauthorized');
+  // if request is outside of home ip drop it
+  const ips = req?.headers?.["x-forwarded-for"] as string;
+  const isHomeIp = ips
+    .split(",")
+    .map((ip) => ip.trim())
+    .includes(HOME_IP);
+
+  if (!isHomeIp) {
+    console.log("unauthorized");
     return res
       .status(401)
       .set({
-        'access-control-allow-origin': '*',
-        'Cache-Control': 'no-store',
+        "access-control-allow-origin": "*",
+        "Cache-Control": "no-store",
       })
-      .json({ message: 'unauthorized' });
+      .json({ message: "unauthorized" });
   } else {
     next();
   }
@@ -47,64 +53,93 @@ app.use(async (req, res, next) => {
 
 // Middleware to parse JSON in the request body
 app.use(express.json());
-app.post('/interpret', async (req, res) => {
-  const userInput = req.body.appointmentText;
+
+const systemMessage: ChatCompletionRequestMessage = {
+  role: "system",
+  content: `
+  You are an appointment scheduling bot designed to help users schedule appointments.
+  Your main purpose is to return following JSON value after obtaining required information by the end of conversation:
+  
+  {
+    "message": "new_appointment",
+    "startTimeUnix": "${Math.round(Date.now() / 1000)}", 
+    "appointmentReason": "Hair cut"
+  }
+  
+  Follow these steps to interact:
+  1. Introduce yourself in first response.  
+  2. Ask for the time of the appointment to obtain "startTimeUnix" value.
+  3. Ask for the reason for the appointment to obtain "appointmentReason" value
+ 
+
+  IMPORTANT: 
+  1. Do not ask for confirmation after obtaining all the required values, "startTimeUnix" and "appointmentReason".
+  2. When you obtained all the required information, only output the JSON value without any additional text.
+  3. The "startTimeUnix" format should be in the Unix timestamp seconds format.
+
+  EXAMPLE CONVERSATION:
+  [
+    {
+      role: 'user',
+      content: '{"currentUnixTimestamp":1691935054,"userPrompt":"hey there"}'
+    },
+    {
+      role: 'assistant',
+      content: '{"message": "Hello! I am an appointment scheduling bot. How can I assist you today?"}'
+    },
+    {
+      role: 'user',
+      content: '{"currentUnixTimestamp":1691935069,"userPrompt":"I want to set an appointment to get my nails done"}'
+    },
+    {
+      role: 'assistant',
+      content: '{"message": "Sure! I can help you with that. When would you like to schedule your appointment?"}'
+    },
+    {
+      role: 'user',
+      content: '{"currentUnixTimestamp":1691935091,"userPrompt":"tomorrow at 3 pm"}'
+    },
+    {
+      role: 'assistant',
+      content: '{"message": "Great! Tomorrow at 3 pm works. What is the reason for your appointment?"}'
+    },
+    {
+      role: 'user',
+      content: '{"currentUnixTimestamp":1691935101,"userPrompt":"like I said, to get my nails done"}'
+    },
+    {
+      role: 'assistant',
+      content: '{"message": "new_appointment", "startTimeUnix": "1692025200", "appointmentReason": "Get nails done"}'
+    }
+  ]
+  `,
+};
+app.post("/interpret", async (req, res) => {
+  const chatHistory: ChatCompletionRequestMessage[] = req.body.chatHistory;
 
   const chatCompletion = await openai.createChatCompletion({
     model: OPENAI_MODEL,
-    temperature: 0.9,
-    messages: [
-      {
-        role: 'system',
-        content: `You are AppointmentBot, an automated service for scheduling appointments.
-        Work with both relative and absolute time and date such as "bugün", "yarın", "bu Cuma", "30
-        Temmuz" etc. from a message.
-        You will be given single input and expected to return single output right away.
-        Given a input such as {
-          today:  2023-07-29T18:00
-          userInput : "Yarin oglen 2'de musait misiniz?"
-        } return JSON similar to the following:
-        { intent: "new_appointment", datetimeStr: "2023-07-30T14:00" }
-        If user's intent is not creating appointment, return
-        { intent: "other" }
-        `,
-      },
-      {
-        role: 'user',
-        content: JSON.stringify({
-          today: new Date().toISOString(),
-          userInput,
-        }),
-      },
-    ],
+    max_tokens: 400,
+    temperature: 0.3,
+    messages: [systemMessage, ...chatHistory],
   });
 
-  const content = JSON.parse(
-    chatCompletion?.data?.choices[0].message?.content as string
-  );
-  console.log(content);
+  const gptAnswer = chatCompletion.data.choices[0].message;
 
-  if (content?.intent != 'new_appointment') {
-    return res
-      .status(200)
-      .set({
-        'access-control-allow-origin': '*',
-        'Cache-Control': 'no-store',
-      })
-      .send({ message: 'your intent is not about creating appointment' });
-  } else {
-    return res
-      .set({
-        'access-control-allow-origin': '*',
-        'Cache-Control': 'no-store',
-      })
-      .json({ content });
-  }
+  const newChatHistory = [...chatHistory, gptAnswer];
+  console.log("newChatHistory", newChatHistory);
+
+  return res
+    .set({
+      "access-control-allow-origin": "*",
+      "Cache-Control": "no-store",
+    })
+    .json({ chatHistory: newChatHistory });
 });
 
 let expressInstance: any;
 async function setup(event: APIGatewayProxyEventV2, context: Context) {
-  console.log('Creating new express instance');
+  console.log("Creating new express instance");
   expressInstance = serverlessExpress({ app });
   return expressInstance(event, context);
 }
