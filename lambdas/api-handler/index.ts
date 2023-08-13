@@ -61,27 +61,23 @@ const systemMessage: ChatCompletionRequestMessage = {
   Your main purpose is to return following JSON value after obtaining required information by the end of conversation:
   
   {
-    "message": "new_appointment",
+    "event": "new_appointment",
     "startTimeUnix": "${Math.round(Date.now() / 1000)}", 
     "appointmentReason": "Hair cut"
   }
   
-  Follow these steps to interact:
-  1. Introduce yourself in first response.  
-  2. Ask for the time of the appointment to obtain "startTimeUnix" value.
-  3. Ask for the reason for the appointment to obtain "appointmentReason" value
- 
 
   IMPORTANT: 
   1. Do not ask for confirmation after obtaining all the required values, "startTimeUnix" and "appointmentReason".
   2. When you obtained all the required information, only output the JSON value without any additional text.
   3. The "startTimeUnix" format should be in the Unix timestamp seconds format.
+  4. Introduce yourself in first response. 
 
   EXAMPLE CONVERSATION:
   [
     {
       role: 'user',
-      content: '{"currentUnixTimestamp":1691935054,"userPrompt":"hey there"}'
+      content: '{"currentUnixTimestamp":1691935054,"message":"hey there"}'
     },
     {
       role: 'assistant',
@@ -89,7 +85,7 @@ const systemMessage: ChatCompletionRequestMessage = {
     },
     {
       role: 'user',
-      content: '{"currentUnixTimestamp":1691935069,"userPrompt":"I want to set an appointment to get my nails done"}'
+      content: '{"currentUnixTimestamp":1691935069,"message":"I want to set an appointment to get my nails done"}'
     },
     {
       role: 'assistant',
@@ -97,7 +93,7 @@ const systemMessage: ChatCompletionRequestMessage = {
     },
     {
       role: 'user',
-      content: '{"currentUnixTimestamp":1691935091,"userPrompt":"tomorrow at 3 pm"}'
+      content: '{"currentUnixTimestamp":1691935091,"message":"tomorrow at 3 pm"}'
     },
     {
       role: 'assistant',
@@ -105,11 +101,11 @@ const systemMessage: ChatCompletionRequestMessage = {
     },
     {
       role: 'user',
-      content: '{"currentUnixTimestamp":1691935101,"userPrompt":"like I said, to get my nails done"}'
+      content: '{"currentUnixTimestamp":1691935101,"message":"like I said, to get my nails done"}'
     },
     {
       role: 'assistant',
-      content: '{"message": "new_appointment", "startTimeUnix": "1692025200", "appointmentReason": "Get nails done"}'
+      content: '{"event": "new_appointment", "startTimeUnix": "1692025200", "appointmentReason": "Get nails done"}'
     }
   ]
   `,
@@ -125,6 +121,31 @@ app.post("/interpret", async (req, res) => {
   });
 
   const gptAnswer = chatCompletion.data.choices[0].message;
+
+  if (!gptAnswer?.content) {
+    res
+      .set({
+        "access-control-allow-origin": "*",
+        "Cache-Control": "no-store",
+      })
+      .json({
+        errorMessage:
+          "Our language model is not able to understand your question. Start new conversation.",
+      });
+  }
+
+  // if event is produced save appointment and return 201
+  if (JSON.parse(gptAnswer!.content!).event) {
+    // TODO save appointment
+    console.log("event produced", JSON.parse(gptAnswer!.content!));
+    return res
+      .set({
+        "access-control-allow-origin": "*",
+        "Cache-Control": "no-store",
+      })
+      .status(201)
+      .send();
+  }
 
   const newChatHistory = [...chatHistory, gptAnswer];
   console.log("newChatHistory", newChatHistory);

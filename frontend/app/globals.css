@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes cursor-animation {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.cursor-animation {
+  display: inline-block;
+  width: 1ch;
+  height: 1rem;
+  background: theme("colors.gray.700");
+  margin-left: 5px;
+  margin-bottom: -2px;
+  border-radius: 1px;
+  animation: cursor-animation 0.5s infinite;
+}

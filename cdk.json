@@ -37,7 +37,7 @@
     "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
     "BRANCH": "dev",
     "dev": {
-      "APP_NAME": "appointment-resolver"
+      "APP_NAME": "appointment-booking-bot"
     }
   }
 }
